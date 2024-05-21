@@ -15,10 +15,8 @@ phases:
   post_build:
     commands:
       - echo "Uploading reports to S3..."
-      - aws s3 cp --exclude "*" --include "*.csv" output/ s3://$BUCKET_REPORT/csv/ --recursive
       - aws s3 cp --exclude "*" --include "*.ocsf.json" output/ s3://$BUCKET_REPORT/ocsf-json/ --recursive
       - aws s3 cp --exclude "*" --include "*.json" --exclude "*.ocsf.json" --exclude "*.asff.json" output/ s3://$BUCKET_REPORT/json/ --recursive
-      - aws s3 cp --exclude "*" --include "*.html" output/ s3://$BUCKET_REPORT/html/ --recursive
       - aws s3 cp --exclude "*" --include "*.asff.json" output/ s3://$BUCKET_REPORT/asff-json/ --recursive #The commands are well-structured to handle multiple formats of Prowler outputs. Ensure the paths and bucket names are correct and that the IAM role associated with the CodeBuild project has the necessary permissions to write to these S3 buckets.
       - >-
         echo "Calculating CIS Compliance Percentage..." &&
