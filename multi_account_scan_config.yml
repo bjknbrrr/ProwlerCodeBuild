@@ -1,0 +1,40 @@
+build:
+    commands:
+      - |
+        if [[ $AWS_REGION =~ 'gov' ]]; then
+            STS_ENDPOINT='--sts-endpoint-region us-gov-west-1'
+        fi
+
+        if [[ $MULTI_ACCOUNT_SCAN = 'true' ]]; then
+
+            echo "Running multi-account scan."
+
+            if [[ $MULTI_ACCOUNT_LIST_OVERRIDE != '' ]]; then
+                echo "Using account overrides."    
+                account_list=$MULTI_ACCOUNT_LIST_OVERRIDE
+            elif [[ $MULTI_ACCOUNT_LIST_OVERRIDE = '' ]]; then
+                echo "Using accounts from aws organizations." 
+                account_list=$(aws organizations list-accounts --query 'Accounts[?Status==`ACTIVE`].Id' --output text)
+            fi
+            
+            echo "Using accounts $account_list."
+
+            #Scan up to three accounts at the same time.
+            PARALLEL_ACCOUNTS=3
+            for accountId in $account_list; do
+                test "$(jobs | wc -l)" -ge $PARALLEL_ACCOUNTS && wait || true
+                {
+                    echo "Running Prowler as prowler $PROWLER_OPTIONS $PROWLER_SCAN_OPTIONS --role arn:$AWS_PARTITION:iam::$accountId:role/service-role/$PROWLER_ROLE $STS_ENDPOINT"
+                    prowler $PROWLER_OPTIONS $PROWLER_SCAN_OPTIONS --role arn:$AWS_PARTITION:iam::$accountId:role/service-role/$PROWLER_ROLE $STS_ENDPOINT
+                } &
+            done
+
+        elif [[ $MULTI_ACCOUNT_SCAN != 'true' ]]; then
+
+            echo "Running a single account scan."
+            echo "Running Prowler as prowler $PROWLER_OPTIONS $PROWLER_SCAN_OPTIONS --role arn:$AWS_PARTITION:iam::$AWS_ACCOUNT_ID:role/service-role/$PROWLER_ROLE $STS_ENDPOINT"
+            prowler $PROWLER_OPTIONS $PROWLER_SCAN_OPTIONS --role arn:$AWS_PARTITION:iam::$AWS_ACCOUNT_ID:role/service-role/$PROWLER_ROLE $STS_ENDPOINT
+
+        fi
+
+        wait   
