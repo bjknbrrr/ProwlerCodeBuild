@@ -1,0 +1,7 @@
+$BUCKET_REPORT = prowler-reports-test --#create S3, where your CodeBuild will be available to wrire files
+$PROWLER_OPTIONS = aws --compliance cis_1.4_aws --security-hub --region $AWS_REGION #run prowler for AWS cloud, CIS compliamce v 1.4,  Sending findings to SecurityHub, run in region, where you want
+$PROWLER_ROLE = ProwlerScanRole --#creared role for prowler, which includes SecurityAudit policy + custom policy to work with S3, SecurityHub etc
+$MULTI_ACCOUNT_SCAN = true/false --#configuration for multi account scan
+$AWS_PARTITION = aws
+$AWS_REGION = eu-west-1/eu-west-2/us-east-1/etc --#AWS region you want to scan
+$SLACK_WEBHOOK_URL = https://hooks.slack.com/services/id --#Slack webhook to send notofications to your Slack channel
