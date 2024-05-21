@@ -18,7 +18,7 @@ This repository provides the necessary configurations and scripts to run Prowler
 - EventBridge, if you want to automate it (cron to run CodeBuild monthly: (0 0 1 * ? *))
 
 ## Configuration
-### Environment Variables
+##Environment Variables
 
 You need to set the following environment variables in the AWS CodeBuild project:
 
@@ -28,7 +28,7 @@ You need to set the following environment variables in the AWS CodeBuild project
     BUCKET_REPORT: The name of the S3 bucket where reports should be uploaded.
     SLACK_WEBHOOK_URL: The Slack webhook URL for notifications.
 
-### Running a Build
+##Running a Build
 
 Trigger a build in AWS CodeBuild once you have configured your project. The buildspec will execute Prowler, upload the results to S3, calculate compliance percentages, and optionally send a notification to Slack.
 
@@ -36,7 +36,7 @@ Trigger a build in AWS CodeBuild once you have configured your project. The buil
 
 The calculate_compliance.py script reads the JSON output from Prowler to calculate the compliance percentage. It's automatically invoked in the post_build phase of the CodeBuild project.
 
-###Multi-Account Scans
+##Multi-Account Scans
 
 For multi-account scans, use the multi_account_scan.sh script. Ensure you have configured cross-account access via IAM roles and that the AWS CLI profiles are set up correctly for each account.
 Additional Notes
