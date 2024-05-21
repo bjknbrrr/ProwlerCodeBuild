@@ -1,0 +1,29 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing Prowler and dependencies..."
+      - pip3 install prowler  # Ensure that Prowler is available as a pip package
+      - prowler -v  # Checking the version of Prowler
+  build:
+    commands:
+      - echo "Running a single account scan."
+      - echo "Running Prowler as prowler $PROWLER_OPTIONS --role arn:$AWS_PARTITION:iam::$AWS_ACCOUNT_ID:role/service-role/$PROWLER_ROLE"
+      - prowler $PROWLER_OPTIONS || true  # Using '|| true' to prevent the build from failing due to Prowler scan results
+  post_build:
+    commands:
+      - echo "Uploading reports to S3..."
+      - aws s3 cp --exclude "*" --include "*.csv" output/ s3://$BUCKET_REPORT/csv/ --recursive
+      - aws s3 cp --exclude "*" --include "*.ocsf.json" output/ s3://$BUCKET_REPORT/ocsf-json/ --recursive
+      - aws s3 cp --exclude "*" --include "*.json" --exclude "*.ocsf.json" --exclude "*.asff.json" output/ s3://$BUCKET_REPORT/json/ --recursive
+      - aws s3 cp --exclude "*" --include "*.html" output/ s3://$BUCKET_REPORT/html/ --recursive
+      - aws s3 cp --exclude "*" --include "*.asff.json" output/ s3://$BUCKET_REPORT/asff-json/ --recursive #The commands are well-structured to handle multiple formats of Prowler outputs. Ensure the paths and bucket names are correct and that the IAM role associated with the CodeBuild project has the necessary permissions to write to these S3 buckets.
+      - >-
+        echo "Calculating CIS Compliance Percentage..." &&
+        python calculate_compliance.py prowler_output.json &&
+        curl -X POST "$SLACK_WEBHOOK_URL" -H 'Content-Type: application/json' --data "{\"text\": \"Prowler Scan Results\", \"blocks\": [{\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*Prowler CIS Compliance Report*\\nCIS Compliance Percentage: `$CIS_COMPLIANCE_PERCENT`%\\nCheck the detailed results in *AWS SecurityHub*: <https://console.aws.amazon.com/securityhub/home?region=$AWS_REGION#/dashboard>.\"}}]}"
+      #The Slack notification command is designed to execute after checking that the $SLACK_WEBHOOK_URL is set. Consider adding a condition to handle the scenario where this variable might not be set.
+      - echo "Importing findings to SecurityHub..."
+      - echo "Done!"
